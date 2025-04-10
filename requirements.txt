@@ -1,0 +1,9 @@
+streamlit==1.32.0
+transformers==4.38.2
+torch==2.2.1
+numpy==1.26.4
+tqdm==4.66.2
+datasets==2.18.0
+scikit-learn==1.4.0
+pandas==2.2.1
+wandb==0.16.3 
