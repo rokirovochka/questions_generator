@@ -10,57 +10,58 @@ st.set_page_config(
 
 @st.cache_resource
 def load_model():
-    model_path = "mirfan899/t5-e2e-questions-generation"
-    st.info("Everything is ready!")
-    tokenizer = AutoTokenizer.from_pretrained(model_path)
-    model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
+    tokenizer = AutoTokenizer.from_pretrained("./model")
+    model = AutoModelForSeq2SeqLM.from_pretrained("./model")
+
     return model, tokenizer
 
 def generate_questions(text, model, tokenizer, num_questions=3):
-    input_text = f"generate questions: {text}"
+    input_text = f"generate question: {text}"
     input_ids = tokenizer.encode(input_text, return_tensors="pt", max_length=1024, truncation=True)
     
     output_ids = model.generate(
         input_ids,
-        max_length=150,
-        min_length=3,  
-        num_beams=5,
-        num_return_sequences=num_questions,
-        no_repeat_ngram_size=3,
-        temperature=0.7,
-        top_k=50,
-        top_p=0.95,
-        do_sample=True, 
+        max_length=128,
+        min_length=3,
+        num_beams=1,
+        num_return_sequences=num_questions * 3,
+        no_repeat_ngram_size=2,
+        temperature=1.1,
+        top_k=100,
+        top_p=0.98,
+        do_sample=True,
         early_stopping=True
     )
     
     questions = [tokenizer.decode(output_id, skip_special_tokens=True) for output_id in output_ids]
     
     processed_questions = []
+    seen_questions = set()
+    
     for question in questions:
-        if question.endswith("what else?") or question.endswith("what else"):
-            continue
+        cleaned_question = question.strip()
         
-        if question.count("?") > 1:
-            split_questions = [q.strip() + "?" for q in question.split("?") if q.strip()]
-            processed_questions.extend(split_questions)
-        else:
-            if not question.strip().endswith("?"):
-                question = question.strip() + "?"
-                
-            if question.strip():
-                processed_questions.append(question)
+        if not cleaned_question or len(cleaned_question) < 5:
+            continue
+            
+        if not cleaned_question.endswith("?"):
+            cleaned_question += "?"
+            
+        cleaned_question = cleaned_question.strip('"').strip("'").strip()
+        
+        lower_q = cleaned_question.lower()
+        if lower_q.endswith("what else?") or lower_q.endswith("anything else?"):
+            continue
+            
+        if cleaned_question not in seen_questions:
+            seen_questions.add(cleaned_question)
+            processed_questions.append(cleaned_question)
+            
+            if len(processed_questions) >= num_questions:
+                break
     
-    if not processed_questions:
-        return questions
-    
-    if len(processed_questions) > num_questions:
-        processed_questions = processed_questions[:num_questions]
-    elif len(processed_questions) < num_questions:
-        while len(processed_questions) < num_questions:
-            processed_questions.append(processed_questions[0])
-    
-    return processed_questions
+    return processed_questions[:num_questions]
+
 
 def main():
     st.title("🤖 AI Question Generator")
