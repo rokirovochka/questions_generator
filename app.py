@@ -10,7 +10,7 @@ st.set_page_config(
 
 @st.cache_resource
 def load_model():
-    model_path = "mirfan899/t5-e2e-questions-generation"
+    model_path = "rokirovochka/t5-base-question-generator"
     st.info("Everything is ready!")
     tokenizer = AutoTokenizer.from_pretrained(model_path)
     model = AutoModelForSeq2SeqLM.from_pretrained(model_path)
